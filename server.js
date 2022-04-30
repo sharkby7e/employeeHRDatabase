@@ -1,6 +1,7 @@
+const mysql = require("mysql2");
 const inquirer = require("inquirer");
-const mysql = require("mysql");
 const cTable = require("console.table");
+const { prompt } = require("inquirer");
 
 const openDB = () => {
   console.log(`
@@ -17,7 +18,11 @@ const openDB = () => {
   mainMenu();
 };
 
-const db = mysql.make;
+const db = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  database: "employee_db",
+});
 
 const mainMenu = () => {
   inquirer
