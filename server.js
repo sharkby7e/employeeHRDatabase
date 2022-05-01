@@ -1,4 +1,4 @@
-const mysql = require("mysql2");
+// const mysql = require("mysql2");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 const { prompt } = require("inquirer");
@@ -18,11 +18,24 @@ const openDB = () => {
   mainMenu();
 };
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  database: "employee_db",
-});
+async function viewOnly(whatView) {
+  const mysql = require("mysql2/promise");
+  const conn = await mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "password",
+    database: "employeeHR_db",
+  });
+  const rows = await conn.execute("select * from ?", whatView);
+  console.log(cTable(rows));
+  await conn.end();
+}
+// const db = mysql.createConnection({
+//   host: "localhost",
+//   user: "root",
+//   database: "employeeHR_db",
+//   password: "password",
+// });
 
 const mainMenu = () => {
   inquirer
@@ -38,6 +51,7 @@ const mainMenu = () => {
           "Add a role",
           "Add an employee",
           "Update an employee role",
+          "Exit",
         ],
         name: "choice",
       },
@@ -65,10 +79,29 @@ const mainMenu = () => {
         case "Update an employee role":
           updateEmployee();
           break;
+        case "Exit":
+          showExitScreen();
+          break;
+        default:
+          break;
       }
     });
 };
 
+function showExitScreen() {
+  console.log(`Thanks for using the\n
+                       __                               __         
+.-----.--------.-----.|  |.-----.--.--.-----.-----.    |  |--.----.
+|  -__|        |  _  ||  ||  _  |  |  |  -__|  -__|    |     |   _|
+|_____|__|__|__|   __||__||_____|___  |_____|_____|    |__|__|__|  
+    __         |__|        __   |_____|                            
+.--|  |.---.-.|  |_.---.-.|  |--.---.-.-----.-----.                
+|  _  ||  _  ||   _|  _  ||  _  |  _  |__ --|  -__|                
+|_____||___._||____|___._||_____|___._|_____|_____|                
+                                                                   
+Please use our app again!
+    `);
+}
 function updateEmployee() {}
 function add(whatAdd) {}
 function viewOnly(whatView) {}
