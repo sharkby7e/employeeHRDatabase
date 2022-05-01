@@ -1,4 +1,4 @@
-// const mysql = require("mysql2");
+const mysql = require("mysql2");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 const { prompt } = require("inquirer");
@@ -18,25 +18,52 @@ const openDB = () => {
   mainMenu();
 };
 
-async function viewOnly(whatView) {
-  const mysql = require("mysql2/promise");
-  const conn = await mysql.createConnection({
+// attempting to wrap in async fucntion
+// async function viewOnly(whatView) {
+//   const mysql = require("mysql2/promise");
+//   const conn = await mysql.createConnection({
+//     host: "localhost",
+//     user: "root",
+//     password: "password",
+//     database: "employeeHR_db",
+//   });
+//   const rows = await connection.query("SELECT * FROM ?", whatView);
+//   console.log(rows);
+//   await conn.end();
+// }
+// regular floating connection
+const db = mysql.createConnection(
+  {
     host: "localhost",
     user: "root",
     password: "password",
     database: "employeeHR_db",
-  });
-  const rows = await conn.execute("select * from ?", whatView);
-  console.log(cTable(rows));
-  await conn.end();
-}
-// const db = mysql.createConnection({
-//   host: "localhost",
-//   user: "root",
-//   database: "employeeHR_db",
-//   password: "password",
-// });
+  },
+  console.log("connected to employeeHR_db")
+);
 
+function viewRoles() {
+  db.query("SELECT * from role", (err, result) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log("");
+      console.table("Roles", result);
+      mainMenu();
+    }
+  });
+}
+function viewDepartments() {
+  db.query("SELECT * from departments", (err, result) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log("");
+      console.table("Departments", result);
+      mainMenu();
+    }
+  });
+}
 const mainMenu = () => {
   inquirer
     .prompt([
@@ -59,10 +86,10 @@ const mainMenu = () => {
     .then((answers) => {
       switch (answers.choice) {
         case "View all departments":
-          viewOnly("departments");
+          viewDepartments();
           break;
         case "View all roles":
-          viewOnly("roles");
+          viewRoles("roles");
           break;
         case "View all employees":
           viewOnly("employees");
@@ -101,6 +128,7 @@ function showExitScreen() {
                                                                    
 Please use our app again!
     `);
+  db.end();
 }
 function updateEmployee() {}
 function add(whatAdd) {}
