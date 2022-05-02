@@ -43,15 +43,26 @@ const db = mysql.createConnection(
 );
 
 function viewRoles() {
-  db.query("SELECT * from role", (err, result) => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log("");
-      console.table("Roles", result);
-      mainMenu();
+  db.query(
+    `
+    SELECT
+    roles.title AS Title, 
+    roles.id AS ID,
+    departments.dept_name AS Department,
+    roles.salary AS Salary
+    FROM roles
+    JOIN departments ON roles.department_id = departments.id
+    `,
+    (err, result) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log("");
+        console.table("Roles", result);
+        mainMenu();
+      }
     }
-  });
+  );
 }
 function viewDepartments() {
   db.query("SELECT * from departments", (err, result) => {
