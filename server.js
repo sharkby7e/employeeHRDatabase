@@ -31,6 +31,7 @@ const openDB = () => {
 //   console.log(rows);
 //   await conn.end();
 // }
+
 // regular floating connection
 const db = mysql.createConnection(
   {
@@ -41,6 +42,18 @@ const db = mysql.createConnection(
   },
   console.log("connected to employeeHR_db")
 );
+
+function viewDepartments() {
+  db.query("SELECT * from departments", (err, result) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log("");
+      console.table("Departments", result);
+      mainMenu();
+    }
+  });
+}
 
 function viewRoles() {
   db.query(
@@ -64,17 +77,37 @@ function viewRoles() {
     }
   );
 }
-function viewDepartments() {
-  db.query("SELECT * from departments", (err, result) => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log("");
-      console.table("Departments", result);
-      mainMenu();
+
+function viewEmployees() {
+  db.query(
+    `
+    SELECT
+      CONCAT(e.first_name, ' ', e.last_name) AS Name, 
+      e.id AS ID,
+      roles.title AS Title,
+      roles.salary AS Salary,
+      departments.dept_name AS Department,
+      CONCAT(m.first_name, ' ', m.last_name) AS Manager
+    FROM employees e
+      LEFT JOIN employees m 
+        ON m.id = e.manager_id
+      JOIN roles 
+        ON e.role_id = roles.id
+      JOIN departments 
+        ON roles.department_id = departments.id
+    `,
+    (err, result) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log("");
+        console.table("Employees", result);
+        mainMenu();
+      }
     }
-  });
+  );
 }
+
 const mainMenu = () => {
   inquirer
     .prompt([
@@ -103,16 +136,16 @@ const mainMenu = () => {
           viewRoles("roles");
           break;
         case "View all employees":
-          viewOnly("employees");
+          viewEmployees();
           break;
         case "Add a department":
-          add("department");
+          addDepartment();
           break;
         case "Add a role":
-          add("role");
+          addRole();
           break;
         case "Add an employee":
-          add("employee");
+          addEmployee();
           break;
         case "Update an employee role":
           updateEmployee();
@@ -142,7 +175,5 @@ Please use our app again!
   db.end();
 }
 function updateEmployee() {}
-function add(whatAdd) {}
-function viewOnly(whatView) {}
 
 openDB();
