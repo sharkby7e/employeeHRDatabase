@@ -22,7 +22,7 @@ const db = mysql.createConnection(
   {
     host: "localhost",
     user: "root",
-    password: "password",
+    password: "password", // put your password here
     database: "employeeHR_db",
   },
   console.log("connected to employeeHR_db")
@@ -173,7 +173,6 @@ async function getEmpList() {
     SELECT CONCAT(first_name, ' ', last_name) AS Name 
     FROM employees
     `);
-  console.log(results);
   if (!results) {
     console.error("There was an error!");
   } else {
