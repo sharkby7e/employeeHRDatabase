@@ -178,6 +178,25 @@ async function getManagersList() {
   return list;
 }
 
+async function getEmpList() {
+  let list = [];
+  const results = await db
+    .promise()
+    .execute(
+      "SELECT CONCAT(first_name, ' ', last_name) AS name from employees"
+    );
+  // err ? console.error(err) : console.log(results[0].dept_name);
+  // console.log(results);
+  if (!results) {
+    console.error("There was an error!");
+  } else {
+    results[0].forEach((elem) => {
+      list.push(elem.name);
+      // console.log(list);
+    });
+  }
+  return list;
+}
 async function getDeptList() {
   let list = [];
   const results = await db
@@ -198,7 +217,9 @@ async function getDeptList() {
 
 async function getRoleList() {
   let list = [];
-  const results = await db.promise().execute("SELECT title FROM roles");
+  const results = await db
+    .promise()
+    .execute("SELECT title FROM roles WHERE salary<1000");
   // err ? console.error(err) : console.log(results[0].dept_name);
   // console.log(results);
   if (!results) {
@@ -262,7 +283,6 @@ async function addRole() {
 
 async function addEmployee() {
   const managerChoices = await getManagersList();
-  managerChoices.push("No Manager");
   const roleChoices = await getRoleList();
   inquirer
     .prompt([
@@ -273,22 +293,73 @@ async function addEmployee() {
         choices: managerChoices,
       },
       {
-        message: "What is will be this employee's Role?",
+        message: "What is will be their Job Title?",
         type: "list",
         name: "role",
         choices: roleChoices,
       },
+      {
+        name: "first_name",
+        message: "What is their First Name?",
+      },
+      {
+        name: "last_name",
+        message: "What is their Last Name?",
+      },
     ])
-    .then((answers) => {});
+    .then((answers) => {
+      const { first_name, last_name, role, manager } = answers;
+      const roleID = roleChoices.indexOf(role) + 1;
+      const managerID = (managerChoices.indexOf(manager) + 1) * 9;
+      db.query(
+        `
+        INSERT INTO employees (first_name, last_name, role_id, manager_id)
+        VALUES (?,?,?,?)`,
+        [first_name, last_name, roleID, managerID]
+      );
+      console.log(`New ${role}, ${first_name} ${last_name}, added to Database`);
+      mainMenu();
+    });
+}
+
+async function updateEmployee() {
+  const empList = await getEmpList();
+  const roleChoices = await getRoleList();
+  inquirer
+    .prompt([
+      {
+        message: "Which Employee would you like to update?",
+        type: "list",
+        choices: empList,
+        name: "employee",
+      },
+      {
+        message: "What is their new Job Title?",
+        type: "list",
+        choices: roleChoices,
+        name: "role",
+      },
+    ])
+    .then((answers) => {
+      const { employee, role } = answers;
+      const employeeID = empList.indexOf(employee) + 1;
+      const roleID = roleChoices.indexOf(role) + 1;
+      db.query("UPDATE employees SET role_id = ? WHERE id = ?", [
+        roleID,
+        employeeID,
+      ]);
+      console.log(`${employee} updated as new ${role}`);
+      mainMenu();
+    });
 }
 
 function showExitScreen() {
   console.log(`Thanks for using the\n
-    __                               __         
+                           __                               __         
     .-----.--------.-----.|  |.-----.--.--.-----.-----.    |  |--.----.
     |  -__|        |  _  ||  ||  _  |  |  |  -__|  -__|    |     |   _|
     |_____|__|__|__|   __||__||_____|___  |_____|_____|    |__|__|__|  
-    __         |__|        __   |_____|                            
+        __         |__|        __   |_____|                            
     .--|  |.---.-.|  |_.---.-.|  |--.---.-.-----.-----.                
     |  _  ||  _  ||   _|  _  ||  _  |  _  |__ --|  -__|                
     |_____||___._||____|___._||_____|___._|_____|_____|                
