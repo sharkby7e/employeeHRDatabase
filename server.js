@@ -1,7 +1,6 @@
 const mysql = require("mysql2");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
-const { prompt } = require("inquirer");
 
 const openDB = () => {
   console.log(`
@@ -18,21 +17,7 @@ const openDB = () => {
   mainMenu();
 };
 
-// attempting to wrap in async fucntion
-// async function viewOnly(whatView) {
-//   const mysql = require("mysql2/promise");
-//   const conn = await mysql.createConnection({
-//     host: "localhost",
-//     user: "root",
-//     password: "password",
-//     database: "employeeHR_db",
-//   });
-//   const rows = await connection.query("SELECT * FROM ?", whatView);
-//   console.log(rows);
-//   await conn.end();
-// }
-
-// regular floating connection
+// Connect to database
 const db = mysql.createConnection(
   {
     host: "localhost",
@@ -43,6 +28,7 @@ const db = mysql.createConnection(
   console.log("connected to employeeHR_db")
 );
 
+// shows all departments
 function viewDepartments() {
   db.query("SELECT * from departments", (err, result) => {
     if (err) {
@@ -55,6 +41,7 @@ function viewDepartments() {
   });
 }
 
+// shows all roles
 function viewRoles() {
   db.query(
     `
@@ -78,6 +65,7 @@ function viewRoles() {
   );
 }
 
+//shows employee chart joined with role, salary, and to itself with a subTable
 function viewEmployees() {
   db.query(
     `
@@ -108,6 +96,7 @@ function viewEmployees() {
   );
 }
 
+// first prompt for user
 const mainMenu = () => {
   inquirer
     .prompt([
@@ -128,12 +117,13 @@ const mainMenu = () => {
       },
     ])
     .then((answers) => {
+      console.log(answers.choice);
       switch (answers.choice) {
         case "View all departments":
           viewDepartments();
           break;
         case "View all roles":
-          viewRoles("roles");
+          viewRoles();
           break;
         case "View all employees":
           viewEmployees();
@@ -159,80 +149,74 @@ const mainMenu = () => {
     });
 };
 
+// returns array of all managers
 async function getManagersList() {
   let list = [];
   const results = await db.promise().execute(`
       SELECT CONCAT(first_name, ' ', last_name) AS Manager
       FROM employees WHERE manager_id IS NULL
       `);
-  // err ? console.error(err) : console.log(results[0].dept_name);
-  // console.log(results);
   if (!results) {
     console.error("There was an error!");
   } else {
     results[0].forEach((elem) => {
       list.push(elem.Manager);
-      // console.log(list);
     });
   }
   return list;
 }
 
+// returns array of all employees
 async function getEmpList() {
   let list = [];
-  const results = await db
-    .promise()
-    .execute(
-      "SELECT CONCAT(first_name, ' ', last_name) AS name from employees"
-    );
-  // err ? console.error(err) : console.log(results[0].dept_name);
-  // console.log(results);
+  const results = await db.promise().execute(`
+    SELECT CONCAT(first_name, ' ', last_name) AS Name 
+    FROM employees
+    `);
+  console.log(results);
   if (!results) {
     console.error("There was an error!");
   } else {
     results[0].forEach((elem) => {
-      list.push(elem.name);
-      // console.log(list);
+      list.push(elem.Name);
     });
   }
   return list;
 }
+
+// returns array of all departments
 async function getDeptList() {
   let list = [];
   const results = await db
     .promise()
     .execute("SELECT dept_name from departments");
-  // err ? console.error(err) : console.log(results[0].dept_name);
-  // console.log(results);
   if (!results) {
     console.error("There was an error!");
   } else {
     results[0].forEach((elem) => {
       list.push(elem.dept_name);
-      // console.log(list);
     });
   }
   return list;
 }
 
+// returns array of all roles
 async function getRoleList() {
   let list = [];
   const results = await db
     .promise()
     .execute("SELECT title FROM roles WHERE salary<1000");
-  // err ? console.error(err) : console.log(results[0].dept_name);
-  // console.log(results);
   if (!results) {
     console.error("There was an error!");
   } else {
     results[0].forEach((elem) => {
       list.push(elem.title);
-      // console.log(list);
     });
   }
   return list;
 }
 
+// add a department prompt and insert into database
 function addDepartment() {
   inquirer
     .prompt([
@@ -248,6 +232,7 @@ function addDepartment() {
     });
 }
 
+// add a role prompt and insert into db
 async function addRole() {
   const deptChoices = await getDeptList();
   inquirer
@@ -281,7 +266,9 @@ async function addRole() {
     });
 }
 
+// add employee prompt and inserst into db
 async function addEmployee() {
+  console.log("running");
   const managerChoices = await getManagersList();
   const roleChoices = await getRoleList();
   inquirer
@@ -322,9 +309,10 @@ async function addEmployee() {
     });
 }
 
+// updates employee in db
 async function updateEmployee() {
   const empList = await getEmpList();
-  const roleChoices = await getRoleList();
+  const roleList = await getRoleList();
   inquirer
     .prompt([
       {
@@ -336,15 +324,15 @@ async function updateEmployee() {
       {
         message: "What is their new Job Title?",
         type: "list",
-        choices: roleChoices,
+        choices: roleList,
         name: "role",
       },
     ])
     .then((answers) => {
       const { employee, role } = answers;
       const employeeID = empList.indexOf(employee) + 1;
-      const roleID = roleChoices.indexOf(role) + 1;
-      db.query("UPDATE employees SET role_id = ? WHERE id = ?", [
+      const roleID = roleList.indexOf(role) + 1;
+      db.query(`UPDATE employees SET role_id = ? WHERE id = ?`, [
         roleID,
         employeeID,
       ]);
@@ -353,6 +341,7 @@ async function updateEmployee() {
     });
 }
 
+// final screen on exit
 function showExitScreen() {
   console.log(`Thanks for using the\n
                            __                               __         
@@ -368,6 +357,5 @@ function showExitScreen() {
     `);
   db.end();
 }
-function updateEmployee() {}
 
 openDB();
