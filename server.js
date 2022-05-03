@@ -202,9 +202,7 @@ async function getDeptList() {
 // returns array of all roles
 async function getRoleList() {
   let list = [];
-  const results = await db
-    .promise()
-    .execute("SELECT title FROM roles WHERE salary<1000");
+  const results = await db.promise().execute("SELECT title FROM roles");
   if (!results) {
     console.error("There was an error!");
   } else {
