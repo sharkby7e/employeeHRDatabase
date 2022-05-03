@@ -159,18 +159,141 @@ const mainMenu = () => {
     });
 };
 
+async function getManagersList() {
+  let list = [];
+  const results = await db.promise().execute(`
+      SELECT CONCAT(first_name, ' ', last_name) AS Manager
+      FROM employees WHERE manager_id IS NULL
+      `);
+  // err ? console.error(err) : console.log(results[0].dept_name);
+  // console.log(results);
+  if (!results) {
+    console.error("There was an error!");
+  } else {
+    results[0].forEach((elem) => {
+      list.push(elem.Manager);
+      // console.log(list);
+    });
+  }
+  return list;
+}
+
+async function getDeptList() {
+  let list = [];
+  const results = await db
+    .promise()
+    .execute("SELECT dept_name from departments");
+  // err ? console.error(err) : console.log(results[0].dept_name);
+  // console.log(results);
+  if (!results) {
+    console.error("There was an error!");
+  } else {
+    results[0].forEach((elem) => {
+      list.push(elem.dept_name);
+      // console.log(list);
+    });
+  }
+  return list;
+}
+
+async function getRoleList() {
+  let list = [];
+  const results = await db.promise().execute("SELECT title FROM roles");
+  // err ? console.error(err) : console.log(results[0].dept_name);
+  // console.log(results);
+  if (!results) {
+    console.error("There was an error!");
+  } else {
+    results[0].forEach((elem) => {
+      list.push(elem.title);
+      // console.log(list);
+    });
+  }
+  return list;
+}
+
+function addDepartment() {
+  inquirer
+    .prompt([
+      {
+        message: "What is the name of this Department?",
+        name: "name",
+      },
+    ])
+    .then((answers) => {
+      db.query("INSERT INTO departments (dept_name) VALUES (?)", answers.name);
+      console.log(`${answers.name} Department added to database`);
+      mainMenu();
+    });
+}
+
+async function addRole() {
+  const deptChoices = await getDeptList();
+  inquirer
+    .prompt([
+      {
+        name: "title",
+        message: "What is the new role Title?",
+      },
+      {
+        name: "salary",
+        message: "What is the Salary",
+      },
+      {
+        message: "Please select the Department",
+        name: "department",
+        type: "list",
+        choices: deptChoices,
+      },
+    ])
+    .then((answers) => {
+      const { title, salary, department } = answers;
+      let deptID = deptChoices.indexOf(department) + 1;
+      db.query(
+        `
+        INSERT INTO roles (title, salary, department_id)
+        VALUES (?,?,?)`,
+        [title, salary, deptID]
+      );
+      console.log(`${title} added to ${department} Department`);
+      mainMenu();
+    });
+}
+
+async function addEmployee() {
+  const managerChoices = await getManagersList();
+  managerChoices.push("No Manager");
+  const roleChoices = await getRoleList();
+  inquirer
+    .prompt([
+      {
+        message: "To whom does this employee report?",
+        type: "list",
+        name: "manager",
+        choices: managerChoices,
+      },
+      {
+        message: "What is will be this employee's Role?",
+        type: "list",
+        name: "role",
+        choices: roleChoices,
+      },
+    ])
+    .then((answers) => {});
+}
+
 function showExitScreen() {
   console.log(`Thanks for using the\n
-                       __                               __         
-.-----.--------.-----.|  |.-----.--.--.-----.-----.    |  |--.----.
-|  -__|        |  _  ||  ||  _  |  |  |  -__|  -__|    |     |   _|
-|_____|__|__|__|   __||__||_____|___  |_____|_____|    |__|__|__|  
+    __                               __         
+    .-----.--------.-----.|  |.-----.--.--.-----.-----.    |  |--.----.
+    |  -__|        |  _  ||  ||  _  |  |  |  -__|  -__|    |     |   _|
+    |_____|__|__|__|   __||__||_____|___  |_____|_____|    |__|__|__|  
     __         |__|        __   |_____|                            
-.--|  |.---.-.|  |_.---.-.|  |--.---.-.-----.-----.                
-|  _  ||  _  ||   _|  _  ||  _  |  _  |__ --|  -__|                
-|_____||___._||____|___._||_____|___._|_____|_____|                
-                                                                   
-Please use our app again!
+    .--|  |.---.-.|  |_.---.-.|  |--.---.-.-----.-----.                
+    |  _  ||  _  ||   _|  _  ||  _  |  _  |__ --|  -__|                
+    |_____||___._||____|___._||_____|___._|_____|_____|                
+
+    Please use our app again!
     `);
   db.end();
 }
